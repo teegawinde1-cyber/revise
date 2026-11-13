@@ -44,31 +44,33 @@ app.post('/api/subjects/:id/flashcards',requireAuth,async(req,res,next)=>{try{co
 app.post('/api/flashcards/:id/review',requireAuth,async(req,res,next)=>{try{const correct=Boolean(req.body.correct);const r=await pool.query('UPDATE flashcards SET times_seen=times_seen+1,times_wrong=times_wrong+$3,last_result=$4 WHERE id=$1 AND user_id=$2 RETURNING id,times_seen,times_wrong,last_result',[req.params.id,req.user.id,correct?0:1,correct]);if(!r.rowCount)return res.status(404).json({error:'Fiche introuvable.'});res.json({flashcard:r.rows[0]});}catch(e){next(e);}});
 app.delete('/api/flashcards/:id',requireAuth,async(req,res,next)=>{try{const r=await pool.query('DELETE FROM flashcards WHERE id=$1 AND user_id=$2 RETURNING id',[req.params.id,req.user.id]);if(!r.rowCount)return res.status(404).json({error:'Fiche introuvable.'});res.json({ok:true});}catch(e){next(e);}});
 
-const STOP_WORDS=new Set('alors au aucun aucune aussi autre aux avec avoir bon car ce cela ces ceux chaque ci comme comment dans des du dedans dehors depuis deux devrait doit donc elle elles en encore est et eu fait faites fois font hors ici il ils je juste la le les leur lui ma mais me même mes moi moins mon ne ni notre nous on ou où par parce pas peut peu plupart pour pourquoi quand que quel quelle quelles quels qui sa sans se ses seulement si sien son sont sous soyez sujet sur ta tandis tellement tels tes ton tous tout toute toutes très trop tu un une vos votre vous y'.split(/\\s+/));
+const STOP_WORDS=new Set('alors au aucun aucune aussi autre aux avec avoir bon car ce cela ces ceux chaque ci comme comment dans des du dedans dehors depuis deux devrait doit donc elle elles en encore est et eu fait faites fois font hors ici il ils je juste la le les leur lui ma mais me même mes moi moins mon ne ni notre nous on ou où par parce pas peut peu plupart pour pourquoi quand que quel quelle quelles quels qui sa sans se ses seulement si sien son sont sous soyez sujet sur ta tandis tellement tels tes ton tous tout toute toutes très trop tu un une vos votre vous y'.split(/\s+/));
 function makeQuizFromText(text,title){
- const sentences=String(text||'').replace(/\\s+/g,' ').split(/(?<=[.!?;])\\s+/).map(s=>s.trim()).filter(s=>s.length>=35&&s.length<=360);
+ const sentences=String(text||'').replace(/\s+/g,' ').split(/(?<=[.!?;])\s+/).map(s=>s.trim()).filter(s=>s.length>=35&&s.length<=360);
  const candidates=[];
  for(const sentence of sentences){
   const words=sentence.match(/[A-Za-zÀ-ÿ0-9-]{5,}/g)||[];
-  const counts={};for(const w of words){const k=w.toLocaleLowerCase('fr');if(!STOP_WORDS.has(k)&&!/^\\d+$/.test(k))counts[k]=(counts[k]||0)+1;}
+  const counts={};
+  for(const word of words){const key=word.toLocaleLowerCase('fr');if(!STOP_WORDS.has(key)&&!/^\d+$/.test(key))counts[key]=(counts[key]||0)+1;}
   const key=Object.keys(counts).sort((a,b)=>b.length-a.length)[0];
   if(!key)continue;
-  const original=words.find(w=>w.toLocaleLowerCase('fr')===key);
-  if(!original)continue;
-  candidates.push({sentence,original,key});
+  const original=words.find(word=>word.toLocaleLowerCase('fr')===key);
+  if(original)candidates.push({sentence,original,key});
  }
  const unique=[];const seen=new Set();
- for(const c of candidates){if(!seen.has(c.key)){seen.add(c.key);unique.push(c);}}
- const pool=unique.map(x=>x.original);
+ for(const item of candidates){if(!seen.has(item.key)){seen.add(item.key);unique.push(item);}}
+ const pool=unique.map(item=>item.original);
  const questions=[];
  for(const item of unique){
-  const distractors=pool.filter(x=>x.toLocaleLowerCase('fr')!==item.key).slice(0,3);
+  const distractors=pool.filter(word=>word.toLocaleLowerCase('fr')!==item.key).slice(0,3);
   if(distractors.length<3)continue;
-  const choices=[item.original,...distractors].sort((a,b)=>a.localeCompare(b,'fr'));
-  questions.push({prompt:'Quel terme complète correctement cette phrase du cours ?',context:item.sentence.replace(new RegExp(item.original.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\app.get('/api/quiz-attempts''),'i'),'________'),options:choices,correct:choices.indexOf(item.original),explanation:'Le terme attendu est « '+item.original+' ». Il apparaît dans la phrase extraite de ta leçon.'});
+  const choices=[item.original,...distractors].sort((x,y)=>x.localeCompare(y,'fr'));
+  const position=item.sentence.toLocaleLowerCase('fr').indexOf(item.original.toLocaleLowerCase('fr'));
+  const context=item.sentence.slice(0,position)+'________'+item.sentence.slice(position+item.original.length);
+  questions.push({prompt:'Quel terme complète correctement cette phrase du cours ?',context,options:choices,correct:choices.indexOf(item.original),explanation:'Le terme attendu est « '+item.original+' ». Il apparaît dans la phrase extraite de ta leçon.'});
   if(questions.length>=8)break;
  }
- if(questions.length<1)throw Object.assign(new Error('Cette leçon ne contient pas encore assez de phrases exploitables pour créer un QCM. Ajoute un cours plus détaillé avec plusieurs phrases.'),{status:422});
+ if(questions.length<1)throw Object.assign(new Error('Cette leçon ne contient pas assez de phrases et de termes distincts pour créer un QCM. Ajoute un cours plus détaillé.'),{status:422});
  return {title:'QCM — '+title,questions,source:'extraction'};
 }
 app.post('/api/subjects/:id/notes/:noteId/quiz',requireAuth,async(req,res,next)=>{try{
