@@ -16,5 +16,5 @@ jobs:
       - run: npm run build
       - run: node --check server/src/index.js
       - run: node --check server/src/ai.js
-      - run: node --check server/src/db.js
       - run: node --check server/src/auth.js
+      - run: node --check server/src/firebaseAdmin.js
