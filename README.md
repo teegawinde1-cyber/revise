@@ -28,11 +28,11 @@ Aider les élèves de Seconde, Première et Terminale à organiser leurs cours, 
 
 ## État du projet
 
-Le dépôt est initialisé. Les fonctionnalités seront ajoutées progressivement et testées avant d'être déclarées terminées.
+La première base du projet est présente : interface, API, authentification, matières et leçons. Les fonctionnalités avancées seront ajoutées progressivement et testées avant d'être déclarées terminées.
 
 ## Développement local
 
-Les instructions d'installation seront complétées avec la première version exécutable du client et du serveur.
+Les instructions d'installation sont disponibles ci-dessous.
 
 ## Sécurité
 
