@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS notes (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(180) NOT NULL,
   content TEXT NOT NULL,
+  summary TEXT,
+  key_points JSONB NOT NULL DEFAULT '[]'::jsonb,
+  analysis_status VARCHAR(20) NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS subjects_user_id_idx ON subjects(user_id);
