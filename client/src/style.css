@@ -7,3 +7,5 @@
 
 .lesson-main{min-width:0;flex:1}.lesson-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.lesson-summary{margin-top:14px;padding:14px;border-radius:12px;background:#202944;border:1px solid #35415d}.lesson-summary strong{color:#c7baff;font-size:12px}.lesson-summary p{white-space:pre-wrap;line-height:1.6;color:#e0e6f4}.lesson-summary ul{padding-left:20px;color:#c7d1e5;font-size:12px;line-height:1.7}.lesson-card{align-items:flex-start}
 @media(max-width:650px){.lesson-card{flex-direction:column}.lesson-actions{width:100%}.lesson-actions button{flex:1}}
+
+.difficulty-picker{display:flex;align-items:center;gap:12px;margin:18px 0;color:#bfc9df;font-size:12px}.difficulty-picker select{background:#202944;color:#f3f5ff;border:1px solid #3a4765;border-radius:9px;padding:9px 12px}
