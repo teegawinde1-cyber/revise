@@ -1,0 +1,1 @@
+node_modules/\n.env\n.env.*\n!.env.example\ndist/\ncoverage/\n.DS_Store\n
