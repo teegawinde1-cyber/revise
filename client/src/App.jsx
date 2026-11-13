@@ -30,7 +30,7 @@ function App() {
  async function addFlashcard(e){e.preventDefault();if(!front.trim()||!back.trim()||!active)return;try{const d=await request('/subjects/'+active.id+'/flashcards',{method:'POST',body:JSON.stringify({front,back})});setFlashcards(v=>[d.flashcard,...v]);setFront('');setBack('');setShowCard(false);}catch(err){alert(err.message);}}
  async function reviewFlashcard(card,correct){try{const d=await request('/flashcards/'+card.id+'/review',{method:'POST',body:JSON.stringify({correct})});setFlashcards(v=>v.map(x=>x.id===card.id?{...x,...d.flashcard}:x));}catch(err){alert(err.message);}}
  async function deleteFlashcard(id){try{await request('/flashcards/'+id,{method:'DELETE'});setFlashcards(v=>v.filter(x=>x.id!==id));}catch(err){alert(err.message);}}
- function logout(){setToken(null);setUser(null);setFlashcards([]);setView('home');}
+ function logout(){setToken(null);localStorage.removeItem(KEY);setUser(null);setSubjects([]);setAttempts([]);setFlashcards([]);setUsage(null);setActive(null);setView('home');}
  if(!user && getToken()) return <div className="loading">Chargement de ton espace…</div>;
  if(!user) return <Auth onLogin={setUser}/>;
  const selected=subjects.find(s=>s.id===active?.id);
