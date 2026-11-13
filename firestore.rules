@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Toutes les données passent par l'API Node vérifiant les jetons Firebase.
+    // Le SDK Admin contourne ces règles uniquement côté serveur.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
