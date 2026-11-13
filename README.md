@@ -28,11 +28,25 @@ Aider les élèves de Seconde, Première et Terminale à organiser leurs cours, 
 
 ## État du projet
 
-La première base du projet est présente : interface, API, authentification, matières et leçons. Les fonctionnalités avancées seront ajoutées progressivement et testées avant d'être déclarées terminées.
+La base du projet comprend l'interface React, l'API Express, l'authentification, les matières, les leçons, les flashcards et un premier QCM extrait du texte des cours. Les fonctions avancées restent à développer et à tester.
 
 ## Développement local
 
-Les instructions d'installation sont disponibles ci-dessous.
+### Installation
+
+1. Installer Node.js LTS et PostgreSQL.
+2. À la racine du dépôt : `npm install`.
+3. Créer une base PostgreSQL vide.
+4. Exécuter tout le fichier `server/schema.sql` sur cette base (il crée aussi les tables de flashcards et de résultats).
+5. Copier `server/.env.example` vers `server/.env`, puis renseigner `DATABASE_URL` et un `JWT_SECRET` long et aléatoire.
+6. Lancer `npm run dev` à la racine.
+7. Ouvrir l'adresse locale affichée par Vite (habituellement `http://localhost:5173`).
+
+Pour héberger l'application, il faudra ensuite déployer séparément le client, l'API et PostgreSQL, puis définir `VITE_API_URL` sur l'URL publique de l'API.
+
+### QCM actuel
+
+Le premier générateur est une extraction automatique côté serveur : il repère des phrases et des termes présents dans la leçon, puis construit des questions à trous avec quatre choix. Ce n'est pas encore une IA pédagogique : les distracteurs peuvent être peu pertinents et les questions doivent être relues. Une leçon trop courte ou pauvre en phrases peut ne pas produire de QCM. Les résultats sont enregistrés dans l'historique du compte.
 
 ## Sécurité
 
