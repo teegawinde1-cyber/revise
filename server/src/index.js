@@ -43,6 +43,41 @@ app.get('/api/subjects/:id/flashcards',requireAuth,async(req,res,next)=>{try{con
 app.post('/api/subjects/:id/flashcards',requireAuth,async(req,res,next)=>{try{const {front,back,noteId}=req.body;if(!String(front||'').trim()||!String(back||'').trim())return res.status(400).json({error:'Question et réponse obligatoires.'});const own=await pool.query('SELECT id FROM subjects WHERE id=$1 AND user_id=$2',[req.params.id,req.user.id]);if(!own.rowCount)return res.status(404).json({error:'Matière introuvable.'});if(noteId){const note=await pool.query('SELECT id FROM notes WHERE id=$1 AND subject_id=$2 AND user_id=$3',[noteId,req.params.id,req.user.id]);if(!note.rowCount)return res.status(404).json({error:'Leçon introuvable.'});}const r=await pool.query('INSERT INTO flashcards(user_id,subject_id,note_id,front,back) VALUES($1,$2,$3,$4,$5) RETURNING *',[req.user.id,req.params.id,noteId||null,String(front).trim(),String(back).trim()]);res.status(201).json({flashcard:r.rows[0]});}catch(e){next(e);}});
 app.post('/api/flashcards/:id/review',requireAuth,async(req,res,next)=>{try{const correct=Boolean(req.body.correct);const r=await pool.query('UPDATE flashcards SET times_seen=times_seen+1,times_wrong=times_wrong+$3,last_result=$4 WHERE id=$1 AND user_id=$2 RETURNING id,times_seen,times_wrong,last_result',[req.params.id,req.user.id,correct?0:1,correct]);if(!r.rowCount)return res.status(404).json({error:'Fiche introuvable.'});res.json({flashcard:r.rows[0]});}catch(e){next(e);}});
 app.delete('/api/flashcards/:id',requireAuth,async(req,res,next)=>{try{const r=await pool.query('DELETE FROM flashcards WHERE id=$1 AND user_id=$2 RETURNING id',[req.params.id,req.user.id]);if(!r.rowCount)return res.status(404).json({error:'Fiche introuvable.'});res.json({ok:true});}catch(e){next(e);}});
+
+const STOP_WORDS=new Set('alors au aucun aucune aussi autre aux avec avoir bon car ce cela ces ceux chaque ci comme comment dans des du dedans dehors depuis deux devrait doit donc elle elles en encore est et eu fait faites fois font hors ici il ils je juste la le les leur lui ma mais me même mes moi moins mon ne ni notre nous on ou où par parce pas peut peu plupart pour pourquoi quand que quel quelle quelles quels qui sa sans se ses seulement si sien son sont sous soyez sujet sur ta tandis tellement tels tes ton tous tout toute toutes très trop tu un une vos votre vous y'.split(/\\s+/));
+function makeQuizFromText(text,title){
+ const sentences=String(text||'').replace(/\\s+/g,' ').split(/(?<=[.!?;])\\s+/).map(s=>s.trim()).filter(s=>s.length>=35&&s.length<=360);
+ const candidates=[];
+ for(const sentence of sentences){
+  const words=sentence.match(/[A-Za-zÀ-ÿ0-9-]{5,}/g)||[];
+  const counts={};for(const w of words){const k=w.toLocaleLowerCase('fr');if(!STOP_WORDS.has(k)&&!/^\\d+$/.test(k))counts[k]=(counts[k]||0)+1;}
+  const key=Object.keys(counts).sort((a,b)=>b.length-a.length)[0];
+  if(!key)continue;
+  const original=words.find(w=>w.toLocaleLowerCase('fr')===key);
+  if(!original)continue;
+  candidates.push({sentence,original,key});
+ }
+ const unique=[];const seen=new Set();
+ for(const c of candidates){if(!seen.has(c.key)){seen.add(c.key);unique.push(c);}}
+ const pool=unique.map(x=>x.original);
+ const questions=[];
+ for(const item of unique){
+  const distractors=pool.filter(x=>x.toLocaleLowerCase('fr')!==item.key).slice(0,3);
+  if(distractors.length<3)continue;
+  const choices=[item.original,...distractors].sort((a,b)=>a.localeCompare(b,'fr'));
+  questions.push({prompt:'Quel terme complète correctement cette phrase du cours ?',context:item.sentence.replace(new RegExp(item.original.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\app.get('/api/quiz-attempts''),'i'),'________'),options:choices,correct:choices.indexOf(item.original),explanation:'Le terme attendu est « '+item.original+' ». Il apparaît dans la phrase extraite de ta leçon.'});
+  if(questions.length>=8)break;
+ }
+ if(questions.length<1)throw Object.assign(new Error('Cette leçon ne contient pas encore assez de phrases exploitables pour créer un QCM. Ajoute un cours plus détaillé avec plusieurs phrases.'),{status:422});
+ return {title:'QCM — '+title,questions,source:'extraction'};
+}
+app.post('/api/subjects/:id/notes/:noteId/quiz',requireAuth,async(req,res,next)=>{try{
+ const r=await pool.query('SELECT n.id,n.title,n.content FROM notes n JOIN subjects s ON s.id=n.subject_id WHERE n.id=$1 AND n.subject_id=$2 AND n.user_id=$3 AND s.user_id=$3',[req.params.noteId,req.params.id,req.user.id]);
+ if(!r.rowCount)return res.status(404).json({error:'Leçon introuvable.'});
+ const quiz=makeQuizFromText(r.rows[0].content,r.rows[0].title);
+ res.json({quiz:{...quiz,subjectId:req.params.id,noteId:r.rows[0].id}});
+ }catch(e){if(e.status)return res.status(e.status).json({error:e.message});next(e);}});
+
 app.get('/api/quiz-attempts',requireAuth,async(req,res,next)=>{try{const r=await pool.query('SELECT id,subject_id,note_id,title,score,total,answers,created_at FROM quiz_attempts WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50',[req.user.id]);res.json({attempts:r.rows});}catch(e){next(e);}});
 app.post('/api/quiz-attempts',requireAuth,async(req,res,next)=>{try{const {subjectId,noteId,title,score,total,answers=[]}=req.body;const s=Number(score),t=Number(total);if(!String(title||'').trim()||!Number.isInteger(s)||!Number.isInteger(t)||t<1||s<0||s>t||!Array.isArray(answers))return res.status(400).json({error:'Résultat de QCM invalide.'});if(subjectId){const own=await pool.query('SELECT id FROM subjects WHERE id=$1 AND user_id=$2',[subjectId,req.user.id]);if(!own.rowCount)return res.status(404).json({error:'Matière introuvable.'});}const r=await pool.query('INSERT INTO quiz_attempts(user_id,subject_id,note_id,title,score,total,answers) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,title,score,total,answers,created_at',[req.user.id,subjectId||null,noteId||null,String(title).trim(),s,t,JSON.stringify(answers)]);res.status(201).json({attempt:r.rows[0]});}catch(e){next(e);}});
 
