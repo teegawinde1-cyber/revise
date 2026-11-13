@@ -67,3 +67,8 @@ Le quota est vérifié côté serveur avec une transaction Firestore, afin que d
 ## Déploiement
 
 Le serveur doit être déployé sur un hébergeur Node.js et le client sur un hébergement web. Le PC personnel n'aura alors pas besoin de rester allumé. Ajouter les variables secrètes Firebase Admin et IA dans les réglages de l'hébergeur, jamais dans GitHub.
+
+
+### Connexion par téléphone
+
+L'application utilise le contrôle reCAPTCHA invisible avant l'envoi d'un SMS. Le numéro doit être saisi au format international (par exemple `+226...`). Pour tester sans consommer de SMS, Firebase Authentication permet de configurer des numéros de téléphone de test et des codes fictifs dans les réglages du fournisseur Téléphone. Les SMS réels sont soumis aux limites, à la disponibilité par pays et aux conditions de facturation Firebase en vigueur.
