@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import {FieldValue} from 'firebase-admin/firestore';
-import {db,adminAuth} from './firebaseAdmin.js';
+import {db} from './firebaseAdmin.js';
 import {requireAuth} from './auth.js';
 import {askAI,isAIConfigured} from './ai.js';
 
@@ -42,8 +42,6 @@ async function ownedSubject(uid,sid){const snap=await subjects(uid).doc(sid).get
 async function ownedNote(uid,sid,nid){const snap=await notes(uid,sid).doc(nid).get();return snap.exists?snap:null;}
 
 app.get('/api/health',async(_req,res)=>{try{await db.collection('_health').limit(1).get();res.json({status:'ok',service:'revisebac-api',database:'firestore',aiConfigured:isAIConfigured()});}catch{res.status(503).json({status:'error',database:'unavailable',aiConfigured:isAIConfigured()});}});
-app.get('/api/auth/me',requireAuth,async(req,res)=>{try{const snap=await userDoc(req.user.id).get();const profile=snap.data()||{};res.json({user:{id:req.user.id,name:profile.name||req.user.name||'Élève',email:req.user.email||'',phoneNumber:req.user.phoneNumber||''}});}catch(e){sendError(res,e);}});
-app.put('/api/auth/profile',requireAuth,async(req,res)=>{try{const name=String(req.body.name||'').trim().slice(0,100);const profile={name,updatedAt:FieldValue.serverTimestamp()};if(req.user.email)profile.email=req.user.email;if(req.user.phoneNumber)profile.phoneNumber=req.user.phoneNumber;await userDoc(req.user.id).set(profile,{merge:true});await adminAuth.updateUser(req.user.id,{displayName:name||undefined});res.json({user:{id:req.user.id,name,email:req.user.email||'',phoneNumber:req.user.phoneNumber||''}});}catch(e){sendError(res,e);}});
 app.get('/api/usage',requireAuth,async(req,res)=>{try{const s=await usageRef(req.user.id).get();const d=s.exists?s.data():{};res.json({date:todayKey(),images:{used:Number(d.images||0),limit:limits.images,remaining:Math.max(0,limits.images-Number(d.images||0))},generations:{used:Number(d.generations||0),limit:limits.generations,remaining:Math.max(0,limits.generations-Number(d.generations||0))},resetTimeZone:'Africa/Ouagadougou'});}catch(e){sendError(res,e);}});
 app.post('/api/usage/images/consume',requireAuth,async(req,res)=>{try{const quota=await reserveQuota(req.user.id,'images');res.json({ok:true,quota});}catch(e){sendError(res,e);}});
 
