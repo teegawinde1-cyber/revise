@@ -1,8 +1,7 @@
-import { adminAuth } from './firebaseAdmin.js';
-export async function requireAuth(req,res,next) {
- const header=req.headers.authorization||'';
- const token=header.startsWith('Bearer ')?header.slice(7):'';
- if(!token)return res.status(401).json({error:'Connecte-toi pour continuer.'});
- try { const decoded=await adminAuth.verifyIdToken(token);req.user={id:decoded.uid,email:decoded.email||'',name:decoded.name||'',phoneNumber:decoded.phone_number||''};next(); }
- catch { return res.status(401).json({error:'Session Firebase expirée. Reconnecte-toi.'}); }
+const DEVICE_ID_PATTERN = /^[a-zA-Z0-9-]{12,80}$/;
+export function requireAuth(req,res,next) {
+ const id=String(req.headers['x-revisebac-device']||'');
+ if(!DEVICE_ID_PATTERN.test(id)) return res.status(400).json({error:'Identifiant de cet appareil invalide. Recharge la page.'});
+ req.user={id:'device_'+id,name:'Élève',email:'',phoneNumber:''};
+ next();
 }
