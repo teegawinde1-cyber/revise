@@ -1,74 +1,55 @@
 # RéviseBac
 
-Application francophone de révision scolaire pour les élèves de Seconde, Première et Terminale.
+Application francophone de révision scolaire (Seconde, Première et Terminale), développée avec React/Vite et Node/Express.
 
-## Architecture actuelle
+## Fonctionnalités présentes
 
-- Interface : React + Vite.
-- API : Node.js + Express.
-- Accès : sans compte obligatoire, identifiant local de l’appareil ; la connexion facultative multi-appareils reste à développer.
-- Base de données : Cloud Firestore, accessible uniquement par l'API serveur.
-- IA : fournisseur compatible OpenAI, appelé uniquement depuis le serveur.
-- Quotas : 150 images et 100 générations par compte et par jour, remis à zéro à minuit, heure du Burkina Faso (Africa/Ouagadougou).
+- Accès sans compte obligatoire, identifiant local de l'appareil (pseudonyme, **pas une authentification sécurisée**).
+- Matières, cours, fiches de révision et historique QCM sauvegardés via l'API/Firestore si le serveur est configuré.
+- QCM à partir du cours, avec difficulté et corrections. Une génération de QCM de secours basée sur l'extraction de mots du cours existe sans fournisseur IA.
+- Analyse IA des cours (résumé, points essentiels, fiches) et tuteur IA conversationnel lorsque le fournisseur est configuré.
+- Compteurs de génération quotidiens côté serveur.
+- Interface responsive et support de l'installation PWA. Le shell de l'application peut être mis en cache; les appels API et données ne sont **pas** disponibles hors connexion.
 
-## Fonctionnalités actuellement reliées
+## Prérequis
 
-- Création de compte et connexion Firebase.
-- Matières et leçons enregistrées dans Firestore.
-- Flashcards et suivi des révisions.
-- Historique des QCM.
-- Tuteur IA conversationnel (si fournisseur configuré).\n- Analyse IA des leçons, résumés et points essentiels.
-- QCM IA avec choix de difficulté.
-- Compteurs quotidiens et contrôle serveur des quotas.
+- Node.js LTS récent et npm.
+- Projet Firebase avec Firestore.
+- Un adulte responsable doit vérifier les conditions d'âge et d'utilisation du fournisseur IA avant d'activer ce service. Ne partage jamais de clé API dans le chat, dans le navigateur, ou dans GitHub.
 
-## 1. Préparer Firebase (pour la sauvegarde cloud)\n\nL’application s’ouvre sans inscription. Les données sont actuellement associées à un identifiant de l’appareil et enregistrées via Firestore ; ce mécanisme n’est pas un compte sécurisé et ne permet pas encore de synchroniser entre appareils.\n\n## 1. Créer le projet Firebase
+## Démarrage local (Windows)
 
-1. Ouvrir https://console.firebase.google.com/ et utiliser le projet RéviseBac déjà créé.
-2. Dans Authentication > Sign-in method, activer **Google** et **Téléphone**. Pour Téléphone, vérifier les pays autorisés et le quota SMS du projet.
-3. Dans Firestore Database, créer une base en mode production.
-4. Dans les paramètres du projet, ajouter une application Web et relever apiKey, authDomain, projectId, appId et storageBucket.
-5. Dans Firestore > Rules, publier le contenu du fichier `firestore.rules` de ce dépôt. Les accès directs du navigateur sont bloqués : les données transitent par notre API authentifiée.
+1. Extraire le ZIP du dépôt.
+2. À la racine du dossier, ouvrir un terminal.
+3. Installer les dépendances une fois : `npm install`.
+4. Copier `server/.env.example` vers `server/.env`.
+5. Configurer le service Firebase Admin dans `server/.env` (chemin de fichier privé ou variable JSON).
+6. Garder `CLIENT_ORIGIN=http://localhost:5173`.
+7. Lancer `npm run dev`.
+8. Ouvrir `http://localhost:5173`.
 
-## 2. Configurer le client
+Si les dépendances sont déjà installées et n'ont pas changé, il n'est pas nécessaire de relancer `npm install` pour chaque ZIP source.
 
-1. Copier `client/.env.example` vers `client/.env`.
-2. Remplir les variables `VITE_FIREBASE_*` avec les valeurs de l'application Web Firebase.
-3. Garder `VITE_API_URL=http://localhost:4000/api` pour le développement local.
+## Variables serveur
 
-## 3. Configurer le serveur
-
-1. Dans Firebase Console > Project settings > Service accounts, générer une clé privée pour le compte de service.
-2. Copier `server/.env.example` vers `server/.env`.
-3. Définir `FIREBASE_SERVICE_ACCOUNT_JSON` avec le JSON complet du compte de service sur une seule ligne (ou le configurer comme variable secrète sur l'hébergeur).
-4. Définir `CLIENT_ORIGIN` avec l'adresse du client.
-5. Pour activer l'IA, définir `AI_BASE_URL`, `AI_API_KEY` et `AI_MODEL`. La clé IA reste exclusivement côté serveur.
-
-**Sécurité :** ne jamais envoyer ni publier la clé privée Firebase, la clé IA ou un fichier `.env`. Ne pas les placer dans le dossier client ou sur GitHub.
-
-## 4. Démarrer en local
-
-À la racine du dépôt :
-
-```bash
-npm install
-npm run dev
-```
-
-Le client Vite est normalement disponible sur http://localhost:5173 et l'API sur http://localhost:4000.
-
-## Quotas quotidiens
-
-Chaque compte dispose de :
-- 150 images par jour.
-- 100 générations par jour (résumés, QCM, flashcards et autres fonctions IA).
-
-Le quota est vérifié côté serveur avec une transaction Firestore, afin que deux requêtes simultanées ne puissent pas dépasser la limite. La journée est calculée dans le fuseau `Africa/Ouagadougou`. Une génération qui échoue libère sa réservation. Le point d'entrée de consommation des images est prêt ; le flux d'envoi et de stockage des photos doit encore être raccordé avant que le compteur image soit utilisé par une vraie fonction d'import.
+- `PORT`: port API (4000 par défaut).
+- `CLIENT_ORIGIN`: origine du navigateur (dev : localhost:5173).
+- `FIREBASE_SERVICE_ACCOUNT_PATH` ou `FIREBASE_SERVICE_ACCOUNT_JSON`: compte de service privé.
+- `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`: fournisseur compatible OpenAI. La clé reste côté serveur. N'active pas l'IA tant que les conditions d'âge, les règles de confidentialité et l'autorisation d'utilisation dans une application destinée aux élèves ne sont pas confirmées.
 
 ## Déploiement
 
-Le serveur doit être déployé sur un hébergeur Node.js et le client sur un hébergement web. Le PC personnel n'aura alors pas besoin de rester allumé. Ajouter les variables secrètes Firebase Admin et IA dans les réglages de l'hébergeur, jamais dans GitHub.
+Le déploiement public nécessite un hébergement HTTPS du frontend et un hébergement Node pour l'API, une configuration Firebase, des règles anti-abus, des limites de coûts et une vraie authentification si des données personnelles ou une synchronisation inter-appareils sont proposées. L'identifiant d'appareil actuel est une pseudonymisation et peut être usurpé; il ne doit pas être considéré comme une protection de compte.
 
+## Hors connexion
 
-### Connexion par téléphone
+La PWA met en cache le shell et quelques ressources statiques. Les fonctions dépendant de Firestore ou de l'API ne fonctionnent pas hors ligne. Les données locales constituent un cache et ne remplacent pas une sauvegarde fiable.
 
-L'application utilise le contrôle reCAPTCHA invisible avant l'envoi d'un SMS. Le numéro doit être saisi au format international (par exemple `+226...`). Pour tester sans consommer de SMS, Firebase Authentication permet de configurer des numéros de téléphone de test et des codes fictifs dans les réglages du fournisseur Téléphone. Les SMS réels sont soumis aux limites, à la disponibilité par pays et aux conditions de facturation Firebase en vigueur.
+## Contrôle avant publication
+
+- `npm run build`
+- Tester création/suppression de matière, cours, QCM, fiches et historique.
+- Tester avec et sans connexion.
+- Vérifier les paramètres Firebase et les règles.
+- Vérifier les limites et conditions du fournisseur IA.
+- Ne jamais committer de fichiers `.env`, clés privées ou clés API.
