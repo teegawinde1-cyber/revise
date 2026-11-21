@@ -22,11 +22,16 @@ const usageRef=uid=>db.collection('dailyUsage').doc(uid+'_'+todayKey());
 const limits={images:150,generations:100};
 const aiRateLimits=new Map();
 function aiRateLimit(req,res,next){
- const key=req.user?.id||req.ip;const now=Date.now();const windowMs=10*60*1000;const maxRequests=12;
- let entry=aiRateLimits.get(key);
- if(!entry||now-entry.startedAt>=windowMs){entry={startedAt:now,count:0};aiRateLimits.set(key,entry);}
- if(entry.count>=maxRequests){return res.status(429).json({error:'Trop de demandes IA en peu de temps. Réessaie dans quelques minutes.'});}
- entry.count++;next();
+ const now=Date.now();const windowMs=10*60*1000;const maxRequests=12;
+ const keys=['device:'+String(req.user?.id||'anonymous'),'ip:'+String(req.ip||'unknown')];
+ for(const key of keys){
+  let entry=aiRateLimits.get(key);
+  if(!entry||now-entry.startedAt>=windowMs){entry={startedAt:now,count:0};aiRateLimits.set(key,entry);}
+  if(entry.count>=maxRequests)return res.status(429).json({error:'Trop de demandes IA en peu de temps. Réessaie dans quelques minutes.'});
+ }
+ for(const key of keys)aiRateLimits.get(key).count++;
+ if(aiRateLimits.size>2000){for(const [key,entry] of aiRateLimits)if(now-entry.startedAt>=windowMs)aiRateLimits.delete(key);}
+ next();
 }
 async function reserveQuota(uid,type){
  const ref=usageRef(uid);let result;
