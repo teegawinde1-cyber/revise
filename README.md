@@ -6,7 +6,7 @@ Application francophone de révision scolaire pour les élèves de Seconde, Prem
 
 - Interface : React + Vite.
 - API : Node.js + Express.
-- Authentification : Firebase Authentication (Google et téléphone/SMS).
+- Accès : sans compte obligatoire, identifiant local de l’appareil ; la connexion facultative multi-appareils reste à développer.
 - Base de données : Cloud Firestore, accessible uniquement par l'API serveur.
 - IA : fournisseur compatible OpenAI, appelé uniquement depuis le serveur.
 - Quotas : 150 images et 100 générations par compte et par jour, remis à zéro à minuit, heure du Burkina Faso (Africa/Ouagadougou).
@@ -17,11 +17,11 @@ Application francophone de révision scolaire pour les élèves de Seconde, Prem
 - Matières et leçons enregistrées dans Firestore.
 - Flashcards et suivi des révisions.
 - Historique des QCM.
-- Analyse IA des leçons, résumés et points essentiels.
+- Tuteur IA conversationnel (si fournisseur configuré).\n- Analyse IA des leçons, résumés et points essentiels.
 - QCM IA avec choix de difficulté.
 - Compteurs quotidiens et contrôle serveur des quotas.
 
-## 1. Créer le projet Firebase
+## 1. Préparer Firebase (pour la sauvegarde cloud)\n\nL’application s’ouvre sans inscription. Les données sont actuellement associées à un identifiant de l’appareil et enregistrées via Firestore ; ce mécanisme n’est pas un compte sécurisé et ne permet pas encore de synchroniser entre appareils.\n\n## 1. Créer le projet Firebase
 
 1. Ouvrir https://console.firebase.google.com/ et utiliser le projet RéviseBac déjà créé.
 2. Dans Authentication > Sign-in method, activer **Google** et **Téléphone**. Pour Téléphone, vérifier les pays autorisés et le quota SMS du projet.
