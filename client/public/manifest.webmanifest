@@ -1,0 +1,15 @@
+{
+  "name": "RéviseBac — Révision scolaire",
+  "short_name": "RéviseBac",
+  "description": "Organise tes cours, révise avec des fiches et entraîne-toi aux QCM.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1020",
+  "theme_color": "#111827",
+  "icons": [
+    { "src": "/icons/revisebac.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
